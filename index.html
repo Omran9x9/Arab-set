@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تسجيل الدخول والجدول الزمني</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      transition: background 0.3s ease;
+    }
+
+    .container {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      text-align: center;
+      width: 95%;
+      max-width: 900px;
+      margin: 20px 0;
+      transition: background 0.3s ease;
+    }
+
+    #loginSection {
+      background: url('https://cdn.discordapp.com/attachments/1353880504465756172/1362768424027029645/ee03802a6e331559377a7c1ac36481f2.png') no-repeat center center;
+      background-size: cover;
+      color: white;
+    }
+
+    input, button {
+      padding: 12px;
+      width: 80%;
+      margin: 15px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #8e2de2;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #4a00e0;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 15px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f8f8f8;
+    }
+
+    td.available {
+      background-color: #e0ffe0;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    td.booked {
+      background-color: #8e2de2;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    td:hover {
+      transform: scale(1.05);
+    }
+
+    td img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-left: 10px;
+    }
+
+    .logout-btn {
+      margin-top: 20px;
+      background-color: crimson;
+    }
+
+    .time-input {
+      display: none;
+      margin-top: 10px;
+    }
+
+    /* تحسين التفاعل على الأجهزة المحمولة */
+    @media screen and (max-width: 600px) {
+      body {
+        font-size: 14px;
+      }
+
+      .container {
+        width: 90%;
+      }
+
+      table, th, td {
+        font-size: 14px;
+      }
+    }
+
+    /* وضع داكن */
+    body.dark-mode {
+      background: #121212;
+      color: white;
+    }
+
+    .container.dark-mode {
+      background: #333;
+      color: white;
+    }
+
+    .dark-mode button {
+      background-color: #4a00e0;
+    }
+
+    /* تنبيه مخصص */
+    .alert {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      display: none;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container" id="loginSection">
+  <h1>تسجيل الدخول</h1>
+  <input type="text" id="username" placeholder="اكتب اسمك هنا" required>
+  <input type="file" id="profileImage" accept="image/*">
+  <br>
+  <button onclick="login()">دخول</button>
+</div>
+
+<div class="container" id="calendarSection" style="display: none;">
+  <h1 id="welcomeMessage"></h1>
+  <table id="calendar">
+    <thead>
+      <tr>
+        <th>اليوم</th>
+        <th>اسم اليوم</th>
+        <th>الوقت</th>
+        <th>الحجز</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+</div>
+
+<div class="alert" id="alertMessage"></div>
+
+<script>
+  const daysInMay = 31;
+  const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  let username = localStorage.getItem('user') || '';
+  let userColor = localStorage.getItem('userColor') || '#8e2de2';  // اللون الافتراضي
+  let userImage = localStorage.getItem('userImage') || '';
+
+  function login() {
+    const inputName = document.getElementById('username').value.trim();
+    const fileInput = document.getElementById('profileImage');
+    
+    if (inputName === '') {
+      alert("من فضلك أدخل اسمك!");
+    } else {
+      username = inputName;
+      localStorage.setItem('user', username);
+      localStorage.setItem('userColor', userColor);
+      
+      if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          userImage = e.target.result;
+          localStorage.setItem('userImage', userImage);
+          showCalendar();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        showCalendar();
+      }
+    }
+  }
+
+  function showAlert(message) {
+    const alertDiv = document.getElementById('alertMessage');
+    alertDiv.innerText = message;
+    alertDiv.style.display = 'block';
+    setTimeout(() => {
+      alertDiv.style.display = 'none';
+    }, 1000);
+  }
+
+  function generateUserColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = `hsl(${hash % 360}, 70%, 60%)`;
+    return color;
+  }
+
+  function showCalendar() {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('calendarSection').style.display = 'block';
+    document.getElementById('welcomeMessage').innerText = `مرحباً بك، ${username}!`;
+
+    const calendar = document.getElementById('calendar').getElementsByTagName('tbody')[0];
+    calendar.innerHTML = '';  // Clear any existing rows
+
+    for (let day = 1; day <= daysInMay; day++) {
+      const date = new Date(2025, 4, day);
+      const dayName = dayNames[date.getDay()];
+      const bookedName = localStorage.getItem('day_' + day) || '';
+      const bookedImage = localStorage.getItem('dayImage_' + day) || '';  // استرجاع الصورة المحفوظة
+
+      const row = document.createElement('tr');
+
+      const dayCell = document.createElement('td');
+      dayCell.innerText = day;
+
+      const nameCell = document.createElement('td');
+      nameCell.innerText = dayName;
+
+      const timeCell = document.createElement('td');
+      timeCell.innerText = localStorage.getItem('dayTime_' + day) || 'لم يتم تحديد الوقت';
+
+      const bookCell = document.createElement('td');
+      if (bookedName) {
+        bookCell.className = 'booked';
+        const userImg = document.createElement('img');
+        userImg.src = bookedImage;
+        bookCell.innerHTML = `${bookedName} - ${localStorage.getItem('dayTime_' + day)}`;
+        bookCell.appendChild(userImg);
+        bookCell.onclick = function() {
+          if (bookedName === username) {
+            if (confirm(`هل تريد إلغاء حجزك ليوم ${day}?`)) {
+              localStorage.removeItem('day_' + day);
+              localStorage.removeItem('dayImage_' + day);
+              localStorage.removeItem('dayTime_' + day);
+              showCalendar();
+              showAlert('تم إلغاء الحجز');
+            }
+          } else {
+            alert(`اليوم محجوز بالفعل بواسطة ${bookedName}`);
+          }
+        };
+      } else {
+        bookCell.className = 'available';
+        bookCell.innerText = 'متاح';
+        bookCell.onclick = function() {
+          const time = prompt('يرجى إدخال الوقت المحدد للحجز:');
+          if (time) {
+            localStorage.setItem('day_' + day, username);
+            localStorage.setItem('dayImage_' + day, userImage);
+            localStorage.setItem('dayTime_' + day, time);
+            showCalendar();
+            showAlert('تم الحجز بنجاح');
+          }
+        };
+      }
+
+      row.appendChild(dayCell);
+      row.appendChild(nameCell);
+      row.appendChild(timeCell);
+      row.appendChild(bookCell);
+      calendar.appendChild(row);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('userColor');
+    localStorage.removeItem('userImage');
+    location.reload();
+  }
+
+  if (username) {
+    showCalendar();
+  }
+</script>
+
+</body>
+</html>
